@@ -858,20 +858,7 @@ frameEngine = {
       const diffAdded: number | null = frame.diffAdded
       const diffRemoved: number | null = frame.diffRemoved
 
-      // Build plain text: "5 tabs · 22 Jan 2026, 15:23 · 2 open · +1 -2"
-      let text = `${tabCount} tab${tabCount !== 1 ? "s" : ""}`
-      if (dateStr) { text += ` · ${dateStr}` }
-      if (instanceCount > 0) {
-        text += ` · ${instanceCount} open`
-        if (diffAdded !== null && diffRemoved !== null && (diffAdded > 0 || diffRemoved > 0)) {
-          let diffText = ""
-          if (diffAdded > 0) { diffText += `+${diffAdded}` }
-          if (diffRemoved > 0) { diffText += (diffText ? " " : "") + `-${diffRemoved}` }
-          if (diffText) { text += ` · ${diffText}` }
-        }
-      }
-
-      // Build HTML with colored diff stats
+      // Build HTML with colored diff stats for second line display
       let html = `${tabCount} tab${tabCount !== 1 ? "s" : ""}`
       if (dateStr) { html += ` · ${dateStr}` }
       if (instanceCount > 0) {
@@ -890,7 +877,8 @@ frameEngine = {
 
       let relevancy = 1.0
       if (terms.length && name.startsWith(terms[0])) { relevancy += 0.5 }
-      const sug = new Suggestion("frame", url, text, frame.name, get2ndArg, relevancy)
+      // Use frame.name as text (t) so it prefills in input when hovering
+      const sug = new Suggestion("frame", url, frame.name, frame.name, get2ndArg, relevancy)
       sug.textSplit = html
       results.push(sug)
     }
