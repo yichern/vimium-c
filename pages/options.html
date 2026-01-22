@@ -727,6 +727,19 @@ p:regexp-to-replace:target-string:i"
           </div></td>
         </tr>
         <tr>
+          <td class="caption">Frame extension ID</td>
+          <td>
+            <input id="frameExtensionId" type="text" data-model="NonEmptyText" autocomplete="off"
+              placeholder="Extension ID for Frame integration" />
+            <div class="info" data-i="nonEmpty">Delete all to reset this option.</div>
+          </td>
+          <td class="help"><div class="help-inner">
+            The extension ID of the Frame browser window manager.
+            This enables searching and restoring frames from the Vomnibar.
+            Find the ID at <kbd>chrome://extensions</kbd> with Developer mode enabled.
+          </div></td>
+        </tr>
+        <tr>
           <td class="caption" data-i="96">Preferred Vomnibar page</td>
           <td>
             <input id="vomnibarPage" type="text" inputmode="url" lang="en"

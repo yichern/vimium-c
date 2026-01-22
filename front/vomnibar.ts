@@ -91,6 +91,7 @@ var VCID_: string | undefined = VCID_ || "", VHost_: string | undefined = VHost_
           + (engines.includes("tab") ? SugType2.tab : 0)
           + (engines.includes("search") ? SugType2.search : 0)
           + (engines.includes("domain") ? SugType2.domain : 0)
+          + (engines.includes("frame") ? SugType2.frame : 0)
     }
     a.mode_.e = ((engines as CompletersNS.SugType | "") || SugType2.Empty) | 0
     if (a.mode_.e) { a.mode_.o = "omni" }

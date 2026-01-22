@@ -359,6 +359,7 @@ nickyfeng@edgetranslate.com
 saladict@crimx.com`
 : "",
     filterLinkHints: false,
+    frameExtensionId: "",
     grabBackFocus: false,
     hideHud: false,
     ignoreReadonly: GlobalConsts.kCssDefault as const

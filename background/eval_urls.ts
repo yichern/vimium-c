@@ -1,9 +1,9 @@
 import {
   set_evalVimiumUrl_, copy_, evalVimiumUrl_, substitute_, paste_, cPort, curTabId_, framesForTab_, needIcon_, setIcon_,
-  set_cPort, searchEngines_, OnEdge, OnChrome, CurCVer_, OnFirefox, CurFFVer_
+  set_cPort, searchEngines_, OnEdge, OnChrome, CurCVer_, OnFirefox, CurFFVer_, settingsCache_
 } from "./store"
 import { decodeEscapedURL_, spacesRe_, DecodeURLPart_ } from "./utils"
-import { browser_, import2 } from "./browser"
+import { browser_, import2, runtimeError_ } from "./browser"
 import { convertToUrl_, lastUrlType_, createSearchUrl_, quotedStringRe_ } from "./normalize_urls"
 import { parseSearchUrl_ } from "./parse_urls"
 import { getPortUrl_, showHUD, showHUDEx } from "./ports"
@@ -52,6 +52,24 @@ set_evalVimiumUrl_(function (path: string, workType?: Urls.WorkType
       /*#__NOINLINE__*/ forceStatus_(path as Frames.ForcedStatusText)
     }
     return [path, workType >= Urls.WorkType.EvenAffectStatus ? Urls.kEval.status : Urls.kEval.plainUrl]
+  case "frame":
+    const frameExtId = settingsCache_.frameExtensionId
+    if (frameExtId) {
+      const frameName = decodeURIComponent(path.trim())
+      browser_.runtime.sendMessage(frameExtId, {
+        action: "restore",
+        name: frameName,
+        mode: "replace_tabs"
+      }, (): void => {
+        const err = runtimeError_()
+        if (err) {
+          showHUD("Frame extension not available")
+        }
+      })
+    } else {
+      showHUD("frameExtensionId not configured")
+    }
+    return ["", Urls.kEval.status]
   case "url-copy": case "search-copy": case "search.copy": case "copy-url":
     res = convertToUrl_(path, null, Urls.WorkType.ActIfNoSideEffects, _isNested)
     if (res instanceof Promise) {

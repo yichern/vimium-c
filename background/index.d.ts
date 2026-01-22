@@ -306,6 +306,7 @@ declare namespace SettingsNS {
     exclusionOnlyFirstMatch: boolean;
     exclusionRules: ExclusionsNS.StoredRule[];
     extAllowList: string;
+    frameExtensionId: string;
     keyMappings: string;
     localeEncoding: string;
     newTabUrl: string;

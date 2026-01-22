@@ -7,7 +7,8 @@ declare namespace CompletersNS {
     tab = 4,
     search = 8,
     domain = 16,
-    Full = 0x3f,
+    frame = 32,
+    Full = 0x7f,
     /** bookmark | history | tab */ MultipleCandidates = 7,
   }
   const enum QComponent { NONE = 0, mode = 1, query = 2, offset = 4, queryOrOffset = query | offset }
@@ -31,7 +32,7 @@ declare namespace CompletersNS {
     SugTypeOffset = 3,
     MatchTypeMask = (1 << SugTypeOffset) - 1,
   }
-  type ValidTypes = "bookm" | "domain" | "history" | "search" | "tab"
+  type ValidTypes = "bookm" | "domain" | "frame" | "history" | "search" | "tab"
   /**
    * "math" can not be the first suggestion, which is limited by omnibox handlers
    */

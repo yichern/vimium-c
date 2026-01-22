@@ -1,8 +1,8 @@
 import {
   bookmarkCache_, Completion_, os_, CurCVer_, curTabId_, curWndId_, historyCache_, OnChrome, OnFirefox,
-  blank_, recencyForTab_, searchEngines_, evalVimiumUrl_, OnEdge, CONST_
+  blank_, recencyForTab_, searchEngines_, evalVimiumUrl_, OnEdge, CONST_, settingsCache_
 } from "./store"
-import { browser_, getGroupId, getTabUrl, isTabMuted } from "./browser"
+import { browser_, getGroupId, getTabUrl, isTabMuted, runtimeError_ } from "./browser"
 import * as BgUtils_ from "./utils"
 import { convertToUrl_, lastUrlType_, createSearch_ } from "./normalize_urls"
 import { fixCharsInUrl_ } from "./parse_urls"
@@ -811,6 +811,94 @@ searchEngine = {
   }
 },
 
+frameEngine = {
+  filter_ (query: CompletersNS.QueryStatus, _index: number): void {
+    const frameExtId = settingsCache_.frameExtensionId
+    if (!(allExpectedTypes & SugType.frame) || !frameExtId) {
+      return Completers.next_([], SugType.frame)
+    }
+    frameEngine.fetchFrames_(query, frameExtId)
+  },
+  fetchFrames_ (query: CompletersNS.QueryStatus, frameExtId: string): void {
+    browser_.runtime.sendMessage(frameExtId, { action: "list" }, (response: any): void => {
+      const err = runtimeError_()
+      if (err || query.o) {
+        Completers.next_([], SugType.frame)
+        return
+      }
+      frameEngine.performSearch_(query, response?.snapshots || [])
+    })
+  },
+  formatDate_ (isoString: string): string {
+    if (!isoString) { return "" }
+    try {
+      const date = new Date(isoString)
+      const day = date.getDate()
+      const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+      const month = months[date.getMonth()]
+      const year = date.getFullYear()
+      const hours = date.getHours()
+      const mins = date.getMinutes()
+      const hStr = hours < 10 ? "0" + hours : "" + hours
+      const mStr = mins < 10 ? "0" + mins : "" + mins
+      return `${day} ${month} ${year}, ${hStr}:${mStr}`
+    } catch { return "" }
+  },
+  performSearch_ (query: CompletersNS.QueryStatus, snapshots: any[]): void {
+    if (query.o) { return }
+    const results: Suggestion[] = []
+    const terms = queryTerms.map(t => t.toLowerCase())
+    for (const frame of snapshots) {
+      const name: string = (frame.name || "").toLowerCase()
+      if (terms.length && !terms.every((t: string) => name.includes(t))) { continue }
+      const url = `vimium://frame ${encodeURIComponent(frame.name)}`
+      const tabCount: number = frame.tabCount || 0
+      const dateStr = frameEngine.formatDate_(frame.lastSaved)
+      const instanceCount: number = frame.instanceCount || 0
+      const diffAdded: number | null = frame.diffAdded
+      const diffRemoved: number | null = frame.diffRemoved
+
+      // Build plain text: "5 tabs · 22 Jan 2026, 15:23 · 2 open · +1 -2"
+      let text = `${tabCount} tab${tabCount !== 1 ? "s" : ""}`
+      if (dateStr) { text += ` · ${dateStr}` }
+      if (instanceCount > 0) {
+        text += ` · ${instanceCount} open`
+        if (diffAdded !== null && diffRemoved !== null && (diffAdded > 0 || diffRemoved > 0)) {
+          let diffText = ""
+          if (diffAdded > 0) { diffText += `+${diffAdded}` }
+          if (diffRemoved > 0) { diffText += (diffText ? " " : "") + `-${diffRemoved}` }
+          if (diffText) { text += ` · ${diffText}` }
+        }
+      }
+
+      // Build HTML with colored diff stats
+      let html = `${tabCount} tab${tabCount !== 1 ? "s" : ""}`
+      if (dateStr) { html += ` · ${dateStr}` }
+      if (instanceCount > 0) {
+        html += ` · ${instanceCount} open`
+        if (diffAdded !== null && diffRemoved !== null && (diffAdded > 0 || diffRemoved > 0)) {
+          html += " · "
+          if (diffAdded > 0) {
+            html += `<span style="color:#1a7f37">+${diffAdded}</span>`
+          }
+          if (diffRemoved > 0) {
+            if (diffAdded > 0) { html += " " }
+            html += `<span style="color:#cf222e">-${diffRemoved}</span>`
+          }
+        }
+      }
+
+      let relevancy = 1.0
+      if (terms.length && name.startsWith(terms[0])) { relevancy += 0.5 }
+      const sug = new Suggestion("frame", url, text, frame.name, get2ndArg, relevancy)
+      sug.textSplit = html
+      results.push(sug)
+    }
+    results.sort((a, b) => b.r - a.r)
+    Completers.next_(results, SugType.frame)
+  }
+},
+
 Completers = {
   counter_: 0,
   sugTypes_: SugType.Empty,
@@ -959,8 +1047,9 @@ knownCs = {
   __proto__: null as never,
   bookm: [SugType.kBookmark as never, bookmarkEngine] as CompleterList,
   domain: [SugType.domain as never, domainEngine] as CompleterList,
+  frame: [SugType.frame as never, frameEngine] as CompleterList,
   history: [SugType.kHistory as never, historyEngine] as CompleterList,
-  omni: [SugType.Full as never, searchEngine, domainEngine, historyEngine, bookmarkEngine, tabEngine] as CompleterList,
+  omni: [SugType.Full as never, searchEngine, domainEngine, historyEngine, bookmarkEngine, tabEngine, frameEngine] as CompleterList,
   search: [SugType.search as never, searchEngine] as CompleterList,
   tab: [SugType.tab as never, tabEngine] as CompleterList
 }
